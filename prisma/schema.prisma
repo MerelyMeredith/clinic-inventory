@@ -1,0 +1,221 @@
+// ============================================================
+// Schema Prisma - Sistema de Inventario Clínica Dental UABC
+// Fuente: Base de datos.pdf + Requerimientos QA (1).pdf
+//
+// PORTABILIDAD: Este schema usa tipos agnósticos al motor.
+// Para SQL Server: provider = "sqlserver"
+// Para Supabase/PostgreSQL: cambiar provider = "postgresql"
+//   y reemplazar @db.NVarChar -> @db.VarChar
+//   y ajustar @db.Decimal -> sin cambio necesario.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// RF-QA-03: Catálogo de Insumos
+// ─────────────────────────────────────────
+model Insumo {
+  id_insumo    Int     @id @default(autoincrement())
+  nombre       String  @db.NVarChar(120)
+  unidad_medida String @db.NVarChar(30)
+  stock_minimo Decimal @default(0.00) @db.Decimal(10, 2)
+  caduca       Boolean @default(true)
+
+  lotes        Lote[]
+
+  @@map("Insumos")
+}
+
+// ─────────────────────────────────────────
+// RF-QA-04: Tabla Lotes (entradas de inventario)
+// ─────────────────────────────────────────
+model Lote {
+  id_lote            Int      @id @default(autoincrement())
+  id_insumo          Int
+  fecha_caducidad    DateTime? @db.Date
+  cantidad_ingresada Decimal  @db.Decimal(10, 2)
+  fecha_ingreso      DateTime @default(now()) @db.DateTime2
+  estado             String   @default("activo") @db.NVarChar(20)
+  id_empleado        Int
+  proveedor          String   @db.NVarChar(120)
+
+  insumo    Insumo    @relation(fields: [id_insumo], references: [id_insumo])
+  empleado  Empleado  @relation(fields: [id_empleado], references: [id_empleado])
+  detalles  DetalleTick[]
+  mermas    Merma[]
+
+  @@map("Lotes")
+}
+
+// ─────────────────────────────────────────
+// Empleados (almacenistas, docentes, admin)
+// ─────────────────────────────────────────
+model Empleado {
+  id_empleado       Int     @id @default(autoincrement())
+  nombre            String  @db.NVarChar(120)
+  direccion         String? @db.NVarChar(Max)
+  correo_electronico String? @db.NVarChar(100)
+  numero_telefonico String? @db.NVarChar(20)
+  puesto            String? @db.NVarChar(60)
+  horario           String? @db.NVarChar(60)
+
+  // Relación con el modelo de autenticación (RF-QA-01)
+  usuario  Usuario?
+
+  lotes    Lote[]
+  tickets  Ticket[]
+  mermas   Merma[]
+
+  @@map("Empleado")
+}
+
+// ─────────────────────────────────────────
+// RF-QA-01: Tabla de credenciales de sistema
+// (separada del empleado para SRP)
+// ─────────────────────────────────────────
+model Usuario {
+  id_usuario   Int    @id @default(autoincrement())
+  id_empleado  Int    @unique
+  username     String @unique @db.NVarChar(60)
+  password_hash String @db.NVarChar(255) // bcrypt hash
+  rol          String @db.NVarChar(30)  // administrador | docente | almacenista | estudiante_personal
+  activo       Boolean @default(true)
+
+  empleado Empleado @relation(fields: [id_empleado], references: [id_empleado])
+
+  @@map("Usuarios")
+}
+
+// ─────────────────────────────────────────
+// Estudiantes solicitantes
+// ─────────────────────────────────────────
+model Estudiante {
+  no_control         String  @id @db.NVarChar(30)
+  nombre             String  @db.NVarChar(120)
+  correo_electronico String? @db.NVarChar(100)
+  numero_telefonico  String? @db.NVarChar(20)
+
+  tickets Ticket[]
+
+  @@map("Estudiante")
+}
+
+// ─────────────────────────────────────────
+// Categorías de procedimientos
+// ─────────────────────────────────────────
+model Categoria {
+  id_categoria     Int    @id @default(autoincrement())
+  nombre_categoria String @db.NVarChar(80)
+
+  procedimientos Procedimiento[]
+
+  @@map("Categoria")
+}
+
+// ─────────────────────────────────────────
+// Procedimientos / Tratamientos clínicos
+// ─────────────────────────────────────────
+model Procedimiento {
+  id_procedimiento  Int     @id @default(autoincrement())
+  nombre_tratamiento String @db.NVarChar(120)
+  precio            Decimal @default(0.00) @db.Decimal(10, 2)
+  id_categoria      Int
+
+  categoria Categoria @relation(fields: [id_categoria], references: [id_categoria])
+
+  tickets_procedimiento TicketProcedimiento[]
+
+  @@map("Procedimiento")
+}
+
+// ─────────────────────────────────────────
+// Cabecera del Ticket (despacho de insumos)
+// ─────────────────────────────────────────
+model Ticket {
+  id_ticket      Int      @id @default(autoincrement())
+  no_control     String   @db.NVarChar(30)
+  id_empleado    Int
+  nombre_paciente String  @db.NVarChar(120)
+  fecha_hora     DateTime @default(now()) @db.DateTime2
+
+  estudiante   Estudiante @relation(fields: [no_control], references: [no_control])
+  empleado     Empleado   @relation(fields: [id_empleado], references: [id_empleado])
+
+  procedimientos TicketProcedimiento[]
+  detalles       DetalleTick[]
+
+  @@map("Ticket")
+}
+
+// ─────────────────────────────────────────
+// Procedimientos realizados por ticket
+// ─────────────────────────────────────────
+model TicketProcedimiento {
+  id_ticket_procedimiento Int     @id @default(autoincrement())
+  id_ticket               Int
+  id_procedimiento        Int
+  cantidad                Int     @default(1)
+  precio_unitario         Decimal @db.Decimal(10, 2)
+
+  ticket        Ticket        @relation(fields: [id_ticket], references: [id_ticket], onDelete: Cascade)
+  procedimiento Procedimiento @relation(fields: [id_procedimiento], references: [id_procedimiento])
+
+  @@map("Ticket_Procedimiento")
+}
+
+// ─────────────────────────────────────────
+// RF-QA-06/07: Detalles de insumos por ticket (SALIDAS)
+// La validación de stock negativo ocurre en la capa de servicio.
+// ─────────────────────────────────────────
+model DetalleTick {
+  id_detalle_ticket Int     @id @default(autoincrement())
+  id_ticket         Int
+  id_lote           Int
+  cantidad          Decimal @db.Decimal(10, 2)
+
+  ticket Ticket @relation(fields: [id_ticket], references: [id_ticket], onDelete: Cascade)
+  lote   Lote   @relation(fields: [id_lote], references: [id_lote])
+
+  @@map("Detalles_Ticket")
+}
+
+// ─────────────────────────────────────────
+// RF-QA-06: Mermas / Ajustes de inventario
+// ─────────────────────────────────────────
+model Merma {
+  id_merma    Int      @id @default(autoincrement())
+  id_lote     Int
+  id_empleado Int
+  cantidad    Decimal  @db.Decimal(10, 2)
+  ajuste      String   @db.NVarChar(60)  // ROTURA | VENCIMIENTO | CONTAMINACION | AJUSTE_INVENTARIO
+  motivo      String   @db.NVarChar(Max)
+  fecha_hora  DateTime @default(now()) @db.DateTime2
+
+  lote     Lote     @relation(fields: [id_lote], references: [id_lote])
+  empleado Empleado @relation(fields: [id_empleado], references: [id_empleado])
+
+  @@map("Merma")
+}
+
+// ─────────────────────────────────────────
+// RF-QA-12: Bitácora de auditoría (inmutable)
+// ─────────────────────────────────────────
+model Bitacora {
+  id_bitacora Int      @id @default(autoincrement())
+  id_usuario  Int
+  accion      String   @db.NVarChar(60)   // LOGIN | LOGOUT | CREATE | UPDATE | DELETE | EXPORT
+  entidad     String   @db.NVarChar(60)   // Lotes | Merma | Ticket | etc.
+  entidad_id  String?  @db.NVarChar(60)
+  descripcion String?  @db.NVarChar(Max)
+  fecha_hora  DateTime @default(now()) @db.DateTime2
+  ip_address  String?  @db.NVarChar(45)
+
+  @@map("Bitacora")
+}
