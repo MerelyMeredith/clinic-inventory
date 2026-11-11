@@ -149,184 +149,171 @@ export default async function KardexPage({
   const alertasCaducidad = kardex.filter((l) => l.alertaCaducidadProxima);
 
   return (
-    <main>
-      <h1>Monitor Kardex — Historial de Movimientos de Inventario</h1>
-      <p>
-        <a href="/dashboard">← Volver al Panel</a>
-      </p>
-      <p>
-        <em>Vista de solo lectura. RF-QA-08.</em>
-      </p>
+    <main className="page-shell wide">
+      <a href="/dashboard" className="link-back">← Volver al panel</a>
+      <header className="page-header">
+        <div>
+          <span className="eyebrow">Trazabilidad</span>
+          <h1>Monitor Kardex</h1>
+          <p className="subtitle">Historial cronológico de movimientos de inventario. Vista de solo lectura (RF-QA-08).</p>
+        </div>
+      </header>
 
-      {/* ─── Alertas RF-QA-09 y RF-QA-10 ─────────────────────────────── */}
-      {alertasStock.length > 0 && (
-        <section aria-label="Alertas de stock bajo">
-          <h2>⚠️ Alertas de Stock Bajo (RF-QA-09)</h2>
-          <ul>
-            {alertasStock.map((l) => (
-              <li key={l.id_lote}>
-                <strong>Lote #{l.id_lote}</strong> — {l.insumo}: disponible={" "}
-                <strong>{l.saldoDisponible}</strong> {l.unidad} (mínimo:{" "}
-                {l.stockMinimo})
-              </li>
-            ))}
-          </ul>
+      {(alertasStock.length > 0 || alertasCaducidad.length > 0) && (
+        <section className="card">
+          <div className="card-header">
+            <h2>Alertas de inventario</h2>
+            <p>Indicadores automáticos de disponibilidad y vigencia de lotes.</p>
+          </div>
+          {alertasStock.length > 0 && (
+            <div className="alert warning" aria-label="Alertas de stock bajo" style={{ marginBottom: "0.75rem" }}>
+              <strong>⚠️ Stock bajo (RF-QA-09)</strong>
+              <ul style={{ margin: "0.4rem 0 0 1.1rem" }}>
+                {alertasStock.map((l) => (
+                  <li key={l.id_lote}>
+                    <strong>Lote #{l.id_lote}</strong> — {l.insumo}: disponible <strong>{l.saldoDisponible}</strong> {l.unidad} (mínimo: {l.stockMinimo})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {alertasCaducidad.length > 0 && (
+            <div className="alert info" aria-label="Alertas de caducidad próxima">
+              <strong>📅 Caducidad próxima (RF-QA-10)</strong>
+              <ul style={{ margin: "0.4rem 0 0 1.1rem" }}>
+                {alertasCaducidad.map((l) => (
+                  <li key={l.id_lote}>
+                    <strong>Lote #{l.id_lote}</strong> — {l.insumo}: vence en <strong>{l.diasParaCaducidad}</strong> días ({l.fecha_caducidad ? new Date(l.fecha_caducidad).toLocaleDateString("es-MX") : "—"})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
       )}
 
-      {alertasCaducidad.length > 0 && (
-        <section aria-label="Alertas de caducidad próxima">
-          <h2>📅 Alertas de Caducidad Próxima (RF-QA-10)</h2>
-          <ul>
-            {alertasCaducidad.map((l) => (
-              <li key={l.id_lote}>
-                <strong>Lote #{l.id_lote}</strong> — {l.insumo}: vence en{" "}
-                <strong>{l.diasParaCaducidad}</strong> días (
-                {l.fecha_caducidad
-                  ? new Date(l.fecha_caducidad).toLocaleDateString("es-MX")
-                  : "—"}
-                )
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <section className="card soft">
+        <form method="get" id="form-filtros-kardex" className="btn-row" style={{ marginTop: 0 }}>
+          <label htmlFor="solo_activos" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", fontWeight: 600 }}>
+            <input
+              id="solo_activos"
+              name="solo_activos"
+              type="checkbox"
+              value="true"
+              defaultChecked={soloActivos}
+            />
+            Mostrar solo lotes activos
+          </label>
+          <button type="submit" className="btn-secondary">Aplicar filtro</button>
+        </form>
+      </section>
 
-      {/* ─── Filtros ───────────────────────────────────────────────────── */}
-      <form method="get" id="form-filtros-kardex">
-        <label htmlFor="solo_activos">
-          <input
-            id="solo_activos"
-            name="solo_activos"
-            type="checkbox"
-            value="true"
-            defaultChecked={soloActivos}
-          />{" "}
-          Solo lotes activos
-        </label>
-        <button type="submit">Filtrar</button>
-      </form>
-
-      <hr />
-
-      {/* ─── Tabla principal del Kardex ───────────────────────────────── */}
       {kardex.length === 0 ? (
-        <p>No se encontraron lotes con los filtros seleccionados.</p>
+        <section className="card">
+          <p className="muted" style={{ margin: 0 }}>No se encontraron lotes con los filtros seleccionados.</p>
+        </section>
       ) : (
-        kardex.map((lote) => (
-          <section key={lote.id_lote} aria-label={`Lote ${lote.id_lote}`}>
-            <h2>
-              Lote #{lote.id_lote} — {lote.insumo}
-              {lote.alertaStockBajo && " ⚠️ STOCK BAJO"}
-              {lote.alertaCaducidadProxima && " 📅 VENCE PRONTO"}
-            </h2>
+        <div className="section-stack">
+          {kardex.map((lote) => (
+            <section key={lote.id_lote} aria-label={`Lote ${lote.id_lote}`} className="card">
+              <div className="card-header" style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem 0.75rem", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <h2 style={{ marginBottom: "0.2rem" }}>Lote #{lote.id_lote} — {lote.insumo}</h2>
+                  <p>Proveedor: {lote.proveedor} · Registrado por: {lote.empleadoRegistro}</p>
+                </div>
+                <div className="btn-row" style={{ marginTop: 0 }}>
+                  {lote.alertaStockBajo && <span className="badge danger">⚠️ Stock bajo</span>}
+                  {lote.alertaCaducidadProxima && <span className="badge warning">📅 Vence pronto</span>}
+                  <span className={`badge ${lote.estado === "activo" ? "success" : ""}`}>{lote.estado.toUpperCase()}</span>
+                </div>
+              </div>
 
-            <table border={1} cellPadding={4}>
-              <caption>Resumen del Lote</caption>
-              <tbody>
-                <tr>
-                  <th>Proveedor</th>
-                  <td>{lote.proveedor}</td>
-                  <th>Registrado por</th>
-                  <td>{lote.empleadoRegistro}</td>
-                </tr>
-                <tr>
-                  <th>Fecha Ingreso</th>
-                  <td>
-                    {new Date(lote.fecha_ingreso).toLocaleString("es-MX")}
-                  </td>
-                  <th>Fecha Caducidad</th>
-                  <td>
-                    {lote.fecha_caducidad
-                      ? new Date(lote.fecha_caducidad).toLocaleDateString("es-MX")
-                      : "N/A"}
-                    {lote.diasParaCaducidad !== null &&
-                      ` (${lote.diasParaCaducidad} días)`}
-                  </td>
-                </tr>
-                <tr>
-                  <th>Estado</th>
-                  <td>
-                    <strong>{lote.estado.toUpperCase()}</strong>
-                  </td>
-                  <th>Unidad</th>
-                  <td>{lote.unidad}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <table border={1} cellPadding={4}>
-              <caption>Balance del Lote (RF-QA-05)</caption>
-              <thead>
-                <tr>
-                  <th>Cantidad Ingresada</th>
-                  <th>Total Despachado</th>
-                  <th>Total Mermado</th>
-                  <th>Saldo Disponible</th>
-                  <th>Stock Mínimo</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>{lote.cantidadIngresada}</td>
-                  <td>{lote.totalDespachado}</td>
-                  <td>{lote.totalMermado}</td>
-                  <td>
-                    <strong>
-                      {lote.saldoDisponible}
-                      {lote.alertaStockBajo && " ⚠️"}
-                    </strong>
-                  </td>
-                  <td>{lote.stockMinimo}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            {/* Historial cronológico de movimientos (RF-QA-08) */}
-            {lote.movimientos.length > 0 ? (
-              <table border={1} cellPadding={4}>
-                <caption>Historial Cronológico de Movimientos</caption>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Tipo</th>
-                    <th>Fecha / Hora</th>
-                    <th>Cantidad</th>
-                    <th>Saldo Acumulado</th>
-                    <th>Referencia</th>
-                    <th>Usuario</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lote.movimientos.map((m, idx) => (
-                    <tr key={idx}>
-                      <td>{idx + 1}</td>
-                      <td>{m.tipo}</td>
-                      <td>{new Date(m.fecha).toLocaleString("es-MX")}</td>
-                      <td style={{ color: m.cantidad < 0 ? "red" : "green" }}>
-                        {m.cantidad > 0 ? "+" : ""}
-                        {m.cantidad}
-                      </td>
+              <div className="table-wrap">
+                <table>
+                  <caption>Resumen del lote</caption>
+                  <tbody>
+                    <tr>
+                      <th>Fecha ingreso</th>
+                      <td>{new Date(lote.fecha_ingreso).toLocaleString("es-MX")}</td>
+                      <th>Fecha caducidad</th>
                       <td>
-                        <strong>{m.saldo}</strong>
+                        {lote.fecha_caducidad ? new Date(lote.fecha_caducidad).toLocaleDateString("es-MX") : "N/A"}
+                        {lote.diasParaCaducidad !== null && ` (${lote.diasParaCaducidad} días)`}
                       </td>
-                      <td>
-                        <small>{m.ref}</small>
-                      </td>
-                      <td>{m.usuario}</td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p>
-                <em>Sin movimientos registrados en este lote.</em>
-              </p>
-            )}
+                    <tr>
+                      <th>Unidad</th>
+                      <td>{lote.unidad}</td>
+                      <th>Stock mínimo</th>
+                      <td>{lote.stockMinimo}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-            <hr />
-          </section>
-        ))
+              <div className="table-wrap">
+                <table>
+                  <caption>Balance del lote (RF-QA-05)</caption>
+                  <thead>
+                    <tr>
+                      <th>Cantidad ingresada</th>
+                      <th>Total despachado</th>
+                      <th>Total mermado</th>
+                      <th>Saldo disponible</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>{lote.cantidadIngresada}</td>
+                      <td>{lote.totalDespachado}</td>
+                      <td>{lote.totalMermado}</td>
+                      <td>
+                        <strong>{lote.saldoDisponible}</strong>
+                        {lote.alertaStockBajo && <span className="badge danger" style={{ marginLeft: "0.4rem" }}>Bajo</span>}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {lote.movimientos.length > 0 ? (
+                <div className="table-wrap">
+                  <table>
+                    <caption>Historial cronológico de movimientos</caption>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Tipo</th>
+                        <th>Fecha / hora</th>
+                        <th>Cantidad</th>
+                        <th>Saldo acumulado</th>
+                        <th>Referencia</th>
+                        <th>Usuario</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lote.movimientos.map((m, idx) => (
+                        <tr key={idx}>
+                          <td>{idx + 1}</td>
+                          <td><span className={`badge ${m.tipo === "MERMA" ? "warning" : ""}`}>{m.tipo}</span></td>
+                          <td>{new Date(m.fecha).toLocaleString("es-MX")}</td>
+                          <td style={{ color: m.cantidad < 0 ? "var(--danger)" : "var(--success)", fontWeight: 600 }}>
+                            {m.cantidad > 0 ? "+" : ""}{m.cantidad}
+                          </td>
+                          <td><strong>{m.saldo}</strong></td>
+                          <td><small>{m.ref}</small></td>
+                          <td>{m.usuario}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="muted"><em>Sin movimientos registrados en este lote.</em></p>
+              )}
+            </section>
+          ))}
+        </div>
       )}
     </main>
   );

@@ -157,183 +157,173 @@ export default function NuevoDespachoPage() {
   }
 
   return (
-    <main>
-      <h1>Registrar Despacho de Insumos (Ticket)</h1>
-      <p>
-        <a href="/dashboard">← Volver al Panel</a>
-      </p>
+    <main className="page-shell wide">
+      <a href="/dashboard" className="link-back">← Volver al panel</a>
+      <header className="page-header">
+        <div>
+          <span className="eyebrow">Atención clínica</span>
+          <h1>Registrar despacho de insumos</h1>
+          <p className="subtitle">Genere el ticket de salida asociando procedimiento, lotes y justificación del servicio.</p>
+        </div>
+      </header>
 
-      <form onSubmit={handleSubmit} id="form-despacho" noValidate>
-        <fieldset>
-          <legend>Datos del Servicio</legend>
+      <section className="card form-card">
+        <form onSubmit={handleSubmit} id="form-despacho" noValidate>
+          <fieldset>
+            <legend>Datos del servicio</legend>
+            <div className="form-grid">
+              <div className="field">
+                <label htmlFor="no_control">* No. de control del estudiante</label>
+                <input
+                  id="no_control"
+                  name="no_control"
+                  type="text"
+                  required
+                  maxLength={30}
+                  disabled={cargando}
+                  placeholder="Ej. 1289456"
+                />
+              </div>
 
-          <div>
-            <label htmlFor="no_control">* No. de Control del Estudiante:</label>
-            <input
-              id="no_control"
-              name="no_control"
-              type="text"
-              required
-              maxLength={30}
-              disabled={cargando}
-              placeholder="ej. 1289456"
-            />
-          </div>
+              <div className="field">
+                <label htmlFor="nombre_paciente">* Nombre del paciente</label>
+                <input
+                  id="nombre_paciente"
+                  name="nombre_paciente"
+                  type="text"
+                  required
+                  maxLength={120}
+                  disabled={cargando}
+                />
+              </div>
 
-          <div>
-            <label htmlFor="nombre_paciente">* Nombre del Paciente:</label>
-            <input
-              id="nombre_paciente"
-              name="nombre_paciente"
-              type="text"
-              required
-              maxLength={120}
-              disabled={cargando}
-            />
-          </div>
+              <div className="field full">
+                <label htmlFor="id_procedimiento">* Procedimiento realizado</label>
+                <select
+                  id="id_procedimiento"
+                  name="id_procedimiento"
+                  required
+                  disabled={cargando}
+                  onChange={(e) => setProcSeleccionado(Number(e.target.value))}
+                >
+                  <option value={0}>— Seleccionar procedimiento —</option>
+                  {procedimientos.map((p) => (
+                    <option key={p.id_procedimiento} value={p.id_procedimiento}>
+                      {p.nombre_tratamiento} (${p.precio.toFixed(2)})
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          <div>
-            <label htmlFor="id_procedimiento">* Procedimiento Realizado:</label>
-            <select
-              id="id_procedimiento"
-              name="id_procedimiento"
-              required
-              disabled={cargando}
-              onChange={(e) => setProcSeleccionado(Number(e.target.value))}
-            >
-              <option value={0}>— Seleccionar procedimiento —</option>
-              {procedimientos.map((p) => (
-                <option key={p.id_procedimiento} value={p.id_procedimiento}>
-                  {p.nombre_tratamiento} (${p.precio.toFixed(2)})
-                </option>
-              ))}
-            </select>
-          </div>
+              <div className="field full">
+                <label htmlFor="motivo">* Motivo / justificación del despacho</label>
+                <textarea
+                  id="motivo"
+                  name="motivo"
+                  required
+                  minLength={5}
+                  rows={3}
+                  disabled={cargando}
+                  placeholder="Describa el motivo o justificación del despacho..."
+                />
+                <small>Campo obligatorio. RF-QA-06 / TC-02.</small>
+              </div>
+            </div>
+          </fieldset>
 
-          {/* RF-QA-06 / TC-02: Motivo OBLIGATORIO */}
-          <div>
-            <label htmlFor="motivo">
-              * Motivo / Justificación del Despacho:
-            </label>
-            <textarea
-              id="motivo"
-              name="motivo"
-              required
-              minLength={5}
-              rows={3}
-              disabled={cargando}
-              placeholder="Describa el motivo o justificación del despacho..."
-            />
-            <small>Campo obligatorio. RF-QA-06 / TC-02.</small>
-          </div>
-        </fieldset>
+          <fieldset>
+            <legend>Insumos a despachar</legend>
+            <p className="alert warning" style={{ marginTop: 0 }}>
+              ⚠️ Se bloqueará el guardado si la cantidad excede el stock disponible en el lote (RF-QA-07 / TC-01).
+            </p>
 
-        <fieldset>
-          <legend>Insumos a Despachar</legend>
-          <p>
-            <small>
-              ⚠️ Se bloqueará el guardado si la cantidad excede el stock disponible
-              en el lote (RF-QA-07 / TC-01).
-            </small>
-          </p>
-
-          <table border={1} cellPadding={4}>
-            <thead>
-              <tr>
-                <th>Lote / Insumo</th>
-                <th>Stock Disponible</th>
-                <th>Cantidad a Despachar</th>
-                <th>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, index) => {
-                const loteInfo = lotes.find(
-                  (l) => l.id_lote === item.id_lote
-                );
-                return (
-                  <tr key={index}>
-                    <td>
-                      <select
-                        aria-label={`Lote ${index + 1}`}
-                        value={item.id_lote}
-                        onChange={(e) =>
-                          updateItem(index, "id_lote", Number(e.target.value))
-                        }
-                        disabled={cargando}
-                      >
-                        <option value={0}>— Seleccionar lote —</option>
-                        {lotes
-                          .filter((l) => l.saldo_disponible > 0)
-                          .map((l) => (
-                            <option key={l.id_lote} value={l.id_lote}>
-                              #{l.id_lote} — {l.insumo} (disp: {l.saldo_disponible}{" "}
-                              {l.unidad_medida})
-                            </option>
-                          ))}
-                      </select>
-                    </td>
-                    <td>
-                      {loteInfo
-                        ? `${loteInfo.saldo_disponible} ${loteInfo.unidad_medida}`
-                        : "—"}
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        aria-label={`Cantidad lote ${index + 1}`}
-                        min={0.01}
-                        max={loteInfo?.saldo_disponible ?? undefined}
-                        step={0.01}
-                        value={item.cantidad}
-                        onChange={(e) =>
-                          updateItem(index, "cantidad", Number(e.target.value))
-                        }
-                        disabled={cargando}
-                      />
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(index)}
-                        disabled={items.length <= 1 || cargando}
-                      >
-                        Quitar
-                      </button>
-                    </td>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Lote / Insumo</th>
+                    <th>Stock disponible</th>
+                    <th>Cantidad a despachar</th>
+                    <th>Acción</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {items.map((item, index) => {
+                    const loteInfo = lotes.find((l) => l.id_lote === item.id_lote);
+                    return (
+                      <tr key={index}>
+                        <td>
+                          <select
+                            aria-label={`Lote ${index + 1}`}
+                            value={item.id_lote}
+                            onChange={(e) => updateItem(index, "id_lote", Number(e.target.value))}
+                            disabled={cargando}
+                          >
+                            <option value={0}>— Seleccionar lote —</option>
+                            {lotes
+                              .filter((l) => l.saldo_disponible > 0)
+                              .map((l) => (
+                                <option key={l.id_lote} value={l.id_lote}>
+                                  #{l.id_lote} — {l.insumo} (disp: {l.saldo_disponible} {l.unidad_medida})
+                                </option>
+                              ))}
+                          </select>
+                        </td>
+                        <td>{loteInfo ? `${loteInfo.saldo_disponible} ${loteInfo.unidad_medida}` : "—"}</td>
+                        <td>
+                          <input
+                            type="number"
+                            aria-label={`Cantidad lote ${index + 1}`}
+                            min={0.01}
+                            max={loteInfo?.saldo_disponible ?? undefined}
+                            step={0.01}
+                            value={item.cantidad}
+                            onChange={(e) => updateItem(index, "cantidad", Number(e.target.value))}
+                            disabled={cargando}
+                          />
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            onClick={() => removeItem(index)}
+                            disabled={items.length <= 1 || cargando}
+                            className="btn-secondary"
+                          >
+                            Quitar
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-          <button type="button" onClick={addItem} disabled={cargando}>
-            + Agregar otro insumo
-          </button>
-        </fieldset>
+            <div className="btn-row">
+              <button type="button" onClick={addItem} disabled={cargando} className="btn-secondary">
+                + Agregar otro insumo
+              </button>
+            </div>
+          </fieldset>
 
-        <p>
-          <small>
-            ℹ️ El usuario responsable y la fecha/hora se registran automáticamente
-            desde la sesión activa (RF-QA-06).
-          </small>
-        </p>
-
-        {error && (
-          <p role="alert" style={{ color: "red" }}>
-            ⚠ {error}
+          <p className="muted" style={{ marginBottom: "0.5rem" }}>
+            <small>ℹ️ El usuario responsable y la fecha/hora se registran automáticamente desde la sesión activa (RF-QA-06).</small>
           </p>
-        )}
-        {exito && (
-          <p role="status" style={{ color: "green" }}>
-            {exito}
-          </p>
-        )}
 
-        <button type="submit" id="btn-registrar-despacho" disabled={cargando}>
-          {cargando ? "Procesando..." : "Registrar Despacho"}
-        </button>
-      </form>
+          {error && (
+            <p role="alert" className="alert error">⚠ {error}</p>
+          )}
+          {exito && (
+            <p role="status" className="alert success">{exito}</p>
+          )}
+
+          <div className="btn-row">
+            <button type="submit" id="btn-registrar-despacho" disabled={cargando} className="btn-primary">
+              {cargando ? "Procesando..." : "Registrar despacho"}
+            </button>
+          </div>
+        </form>
+      </section>
     </main>
   );
 }

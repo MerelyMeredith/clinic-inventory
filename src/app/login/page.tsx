@@ -56,51 +56,63 @@ export default function LoginPage() {
   }
 
   return (
-    <main>
-      <h1>Sistema de Control de Inventario — Clínica Dental UABC</h1>
-      <h2>Inicio de Sesión</h2>
-
-      <form onSubmit={handleSubmit} method="post" id="form-login">
-        <div>
-          <label htmlFor="username">Usuario:</label>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            autoComplete="username"
-            required
-            disabled={cargando}
-          />
+    <main className="login-shell">
+      <section className="card login-card">
+        <div className="login-brand">
+          <div className="seal" aria-hidden="true">U</div>
+          <span className="eyebrow">FACISALUD Valle de las Palmas</span>
+          <h1>Inventario Clínica Dental</h1>
+          <p className="subtitle">Acceso seguro para personal autorizado de la UABC</p>
         </div>
 
-        <div>
-          <label htmlFor="password">Contraseña:</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            disabled={cargando}
-          />
+        <form onSubmit={handleSubmit} method="post" id="form-login" className="form-grid">
+          <div className="field full">
+            <label htmlFor="username">Usuario</label>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              autoComplete="username"
+              required
+              disabled={cargando}
+              placeholder="Ingrese su nombre de usuario"
+            />
+          </div>
+
+          <div className="field full">
+            <label htmlFor="password">Contraseña</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              disabled={cargando}
+              placeholder="Ingrese su contraseña"
+            />
+          </div>
+
+          {error && (
+            <div className="field full">
+              <p role="alert" aria-live="assertive" className="alert error">
+                ⚠ {error}
+              </p>
+            </div>
+          )}
+
+          <div className="field full">
+            <button type="submit" disabled={cargando} id="btn-login" className="btn-primary" style={{ width: "100%" }}>
+              {cargando ? "Verificando acceso..." : "Entrar al sistema"}
+            </button>
+          </div>
+        </form>
+
+        <div className="footer-note">
+          <small>
+            Universidad Autónoma de Baja California · Sistema protegido. Solo personal autorizado.
+          </small>
         </div>
-
-        {error && (
-          <p role="alert" aria-live="assertive" style={{ color: "red" }}>
-            ⚠ {error}
-          </p>
-        )}
-
-        <button type="submit" disabled={cargando} id="btn-login">
-          {cargando ? "Verificando..." : "Entrar"}
-        </button>
-      </form>
-
-      <hr />
-      <small>
-        UABC — FACISALUD Valle de las Palmas |{" "}
-        <em>Sistema protegido. Solo personal autorizado.</em>
-      </small>
+      </section>
     </main>
   );
 }

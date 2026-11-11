@@ -181,7 +181,7 @@ model DetalleTick {
   cantidad          Decimal @db.Decimal(10, 2)
 
   ticket Ticket @relation(fields: [id_ticket], references: [id_ticket], onDelete: Cascade)
-  lote   Lote   @relation(fields: [id_lote], references: [id_lote])
+  lote   Lote   @relation(fields: [id_lote], references: [id_lote], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("Detalles_Ticket")
 }
@@ -198,7 +198,7 @@ model Merma {
   motivo      String   @db.NVarChar(Max)
   fecha_hora  DateTime @default(now()) @db.DateTime2
 
-  lote     Lote     @relation(fields: [id_lote], references: [id_lote])
+  lote     Lote     @relation(fields: [id_lote], references: [id_lote], onDelete: NoAction, onUpdate: NoAction)
   empleado Empleado @relation(fields: [id_empleado], references: [id_empleado])
 
   @@map("Merma")

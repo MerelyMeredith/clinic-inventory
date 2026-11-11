@@ -103,123 +103,120 @@ export default function NuevoLotePage() {
   }
 
   return (
-    <main>
-      <h1>Registrar Entrada de Lote</h1>
-      <p>
-        <a href="/dashboard">← Volver al Panel</a>
-      </p>
+    <main className="page-shell narrow">
+      <a href="/dashboard" className="link-back">← Volver al panel</a>
+      <header className="page-header">
+        <div>
+          <span className="eyebrow">Inventario</span>
+          <h1>Registrar entrada de lote</h1>
+          <p className="subtitle">Capture la recepción de insumos con trazabilidad automática de usuario y fecha.</p>
+        </div>
+      </header>
 
-      <form onSubmit={handleSubmit} id="form-nuevo-lote" noValidate>
-        {/* Campo: Insumo */}
-        <fieldset>
-          <legend>Datos del Lote</legend>
+      <section className="card form-card">
+        <form onSubmit={handleSubmit} id="form-nuevo-lote" noValidate>
+          <fieldset>
+            <legend>Datos del lote</legend>
 
-          <div>
-            <label htmlFor="id_insumo">* Insumo:</label>
-            <select
-              id="id_insumo"
-              name="id_insumo"
-              required
-              onChange={handleInsumoChange}
-              disabled={cargando}
-            >
-              <option value="">— Seleccionar insumo —</option>
-              {insumos.map((ins) => (
-                <option key={ins.id_insumo} value={ins.id_insumo}>
-                  [{ins.id_insumo}] {ins.nombre} ({ins.unidad_medida})
-                </option>
-              ))}
-            </select>
-          </div>
+            <div className="form-grid">
+              <div className="field full">
+                <label htmlFor="id_insumo">* Insumo</label>
+                <select
+                  id="id_insumo"
+                  name="id_insumo"
+                  required
+                  onChange={handleInsumoChange}
+                  disabled={cargando}
+                >
+                  <option value="">— Seleccionar insumo —</option>
+                  {insumos.map((ins) => (
+                    <option key={ins.id_insumo} value={ins.id_insumo}>
+                      [{ins.id_insumo}] {ins.nombre} ({ins.unidad_medida})
+                    </option>
+                  ))}
+                </select>
+                {insumoSeleccionado && (
+                  <small>
+                    Stock mínimo: {insumoSeleccionado.stock_minimo} ·{" "}
+                    {insumoSeleccionado.caduca ? "⚠️ Este insumo requiere fecha de caducidad" : "✅ Sin fecha de caducidad"}
+                  </small>
+                )}
+              </div>
 
-          {insumoSeleccionado && (
-            <p>
-              <small>
-                Stock mínimo: {insumoSeleccionado.stock_minimo} |{" "}
-                {insumoSeleccionado.caduca ? "⚠️ Este insumo caduca" : "✅ Sin fecha de caducidad"}
-              </small>
+              <div className="field">
+                <label htmlFor="fecha_caducidad">
+                  {insumoSeleccionado?.caduca ? "* " : ""}Fecha de caducidad
+                </label>
+                <input
+                  id="fecha_caducidad"
+                  name="fecha_caducidad"
+                  type="date"
+                  required={insumoSeleccionado?.caduca ?? false}
+                  disabled={cargando || !insumoSeleccionado?.caduca}
+                  min={new Date().toISOString().split("T")[0]}
+                />
+                {insumoSeleccionado?.caduca && <small>Obligatoria. Solo fechas futuras.</small>}
+              </div>
+
+              <div className="field">
+                <label htmlFor="cantidad_ingresada">* Cantidad ingresada</label>
+                <input
+                  id="cantidad_ingresada"
+                  name="cantidad_ingresada"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  required
+                  disabled={cargando}
+                />
+                {insumoSeleccionado && <small>Unidad: {insumoSeleccionado.unidad_medida}</small>}
+              </div>
+
+              <div className="field full">
+                <label htmlFor="proveedor">* Proveedor</label>
+                <input
+                  id="proveedor"
+                  name="proveedor"
+                  type="text"
+                  maxLength={120}
+                  required
+                  disabled={cargando}
+                  placeholder="Nombre del proveedor o distribuidor"
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          <p className="muted" style={{ marginBottom: "0.5rem" }}>
+            <small>ℹ️ El usuario, fecha y hora se registran automáticamente desde su sesión activa (RF-QA-06).</small>
+          </p>
+
+          {error && (
+            <p role="alert" className="alert error">
+              ⚠ {error}
+            </p>
+          )}
+          {exito && (
+            <p role="status" className="alert success">
+              {exito}
             </p>
           )}
 
-          {/* RF-QA-04: Fecha de caducidad (obligatoria si caduca=true) */}
-          <div>
-            <label htmlFor="fecha_caducidad">
-              {insumoSeleccionado?.caduca ? "* " : ""}Fecha de Caducidad:
-            </label>
-            <input
-              id="fecha_caducidad"
-              name="fecha_caducidad"
-              type="date"
-              required={insumoSeleccionado?.caduca ?? false}
-              disabled={cargando || !insumoSeleccionado?.caduca}
-              min={new Date().toISOString().split("T")[0]} // No permitir fechas pasadas
-            />
-            {insumoSeleccionado?.caduca && (
-              <small> (Obligatoria. Solo fechas futuras.)</small>
-            )}
-          </div>
-
-          {/* RF-QA-06: Cantidad ingresada */}
-          <div>
-            <label htmlFor="cantidad_ingresada">* Cantidad Ingresada:</label>
-            <input
-              id="cantidad_ingresada"
-              name="cantidad_ingresada"
-              type="number"
-              min="0.01"
-              step="0.01"
-              required
+          <div className="btn-row">
+            <button type="submit" id="btn-guardar-lote" disabled={cargando} className="btn-primary">
+              {cargando ? "Guardando..." : "Registrar entrada"}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/inventario/lotes")}
               disabled={cargando}
-            />
-            {insumoSeleccionado && (
-              <small> {insumoSeleccionado.unidad_medida}</small>
-            )}
+              className="btn-secondary"
+            >
+              Cancelar
+            </button>
           </div>
-
-          {/* Proveedor */}
-          <div>
-            <label htmlFor="proveedor">* Proveedor:</label>
-            <input
-              id="proveedor"
-              name="proveedor"
-              type="text"
-              maxLength={120}
-              required
-              disabled={cargando}
-              placeholder="Nombre del proveedor o distribuidor"
-            />
-          </div>
-        </fieldset>
-
-        {/* Notas de trazabilidad — usuario y fecha son automáticos (RF-QA-06) */}
-        <p>
-          <small>
-            ℹ️ El usuario, fecha y hora se registran automáticamente desde su sesión activa (RF-QA-06).
-          </small>
-        </p>
-
-        {error && (
-          <p role="alert" style={{ color: "red" }}>
-            ⚠ {error}
-          </p>
-        )}
-        {exito && (
-          <p role="status" style={{ color: "green" }}>
-            {exito}
-          </p>
-        )}
-
-        <button type="submit" id="btn-guardar-lote" disabled={cargando}>
-          {cargando ? "Guardando..." : "Registrar Entrada"}
-        </button>
-        <button
-          type="button"
-          onClick={() => router.push("/inventario/lotes")}
-          disabled={cargando}
-        >
-          Cancelar
-        </button>
-      </form>
+        </form>
+      </section>
     </main>
   );
 }
